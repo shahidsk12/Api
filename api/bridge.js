@@ -6,20 +6,20 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-    // 1. Handle non-POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Please use POST' });
     }
 
-    // 2. Safely initialize Supabase inside the handler
-    const supabaseUrl = process.env.SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Initialize inside the handler to ensure env variables are ready
+    const supabase = createClient(
+        process.env.SUPABASE_URL || '', 
+        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    );
 
     const { prompt, apiKey } = req.body;
 
     try {
-        // 3. Check Supabase
+        // 1. Check Supabase
         const { data: user, error: dbError } = await supabase
             .from('subscribers')
             .select('*')
@@ -31,19 +31,18 @@ export default async function handler(req, res) {
             return res.status(403).json({ error: 'Invalid API Key' });
         }
 
-        // 4. Call Hugging Face Text Model
+        // 2. Call Text Model
         const textRes = await axios.post(`${process.env.TEXT_MODEL_URL}/run/predict`, {
             data: [prompt]
         });
 
-        const generatedText = textRes.data?.data?.[0] || "No response text";
+        const generatedText = textRes.data?.data?.[0] || "No response";
 
-        // 5. Call Kokoro TTS
+        // 3. Call Audio Model
         await axios.post(`${process.env.TTS_MODEL_URL}/generate`, {
             text: generatedText
         });
 
-        // 6. Final Result
         return res.status(200).json({
             success: true,
             text: generatedText,
@@ -56,4 +55,4 @@ export default async function handler(req, res) {
             message: err.message 
         });
     }
-          }
+}
