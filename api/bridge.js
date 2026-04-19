@@ -1,3 +1,7 @@
+export const config = {
+  maxDuration: 60, // Sets the timeout to 60 seconds
+};
+
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 
